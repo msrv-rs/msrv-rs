@@ -1,10 +1,7 @@
 use toml::value::Array;
 
 #[no_mangle]
-pub extern fn plugin_query(ctx: *mut Plugin, s: * const u8, len: usize) -> u32 {
-    let mut ctx = unsafe {
-        Box::from_raw(ctx)
-    };
+pub extern fn plugin_query(ctx: &mut Plugin, s: * const u8, len: usize) -> u32 {
     let s = unsafe {
         let sl = std::slice::from_raw_parts(s, len);
         std::str::from_utf8(sl)
