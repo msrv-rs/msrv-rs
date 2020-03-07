@@ -1,5 +1,8 @@
 #[no_mangle]
-pub extern fn query(s: * const u8, len: usize) -> u32 {
+pub extern fn plugin_query(ctx: *mut Plugin, s: * const u8, len: usize) -> u32 {
+    let mut ctx = unsafe {
+        Box::from_raw(ctx)
+    };
     let s = unsafe {
         let sl = std::slice::from_raw_parts(s, len);
         std::str::from_utf8(sl)
@@ -9,13 +12,36 @@ pub extern fn query(s: * const u8, len: usize) -> u32 {
         // Error
         Err(_) => return u32::max_value(),
     };
-    handle_line(s)
+    ctx.handle_line(s)
 }
 
-fn handle_line(line: &str) -> u32 {
-    if line.contains("adler32 1.0.4") {
-        0
-    } else {
-        1
+#[no_mangle]
+pub extern fn plugin_init() -> * mut Plugin {
+    let ctx = Box::new(Plugin::new());
+    Box::into_raw(ctx)
+}
+
+#[no_mangle]
+pub extern fn plugin_delete(ctx: * mut Plugin) {
+    // Obtain the Box and drop it
+    let _b = unsafe {
+        Box::from_raw(ctx)
+    };
+}
+
+pub struct Plugin {
+}
+
+impl Plugin {
+    fn new() -> Self {
+        Self {
+        }
+    }
+    fn handle_line(&mut self, line: &str) -> u32 {
+        if line.contains("adler32 1.0.4") || line.contains("adler32 1.0.3") {
+            0
+        } else {
+            1
+        }
     }
 }
