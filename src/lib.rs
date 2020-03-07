@@ -1,3 +1,4 @@
+use toml::Value;
 use toml::value::Array;
 
 #[no_mangle]
@@ -16,11 +17,13 @@ pub extern fn plugin_query(ctx: &mut Plugin, s: * const u8, len: usize) -> u32 {
 
 #[no_mangle]
 pub extern fn plugin_init(s: * const u8, len: usize) -> * mut Plugin {
-    let _params = unsafe {
+    let params_str = unsafe {
         let sl = std::slice::from_raw_parts(s, len);
         std::str::from_utf8(sl)
     };
-    let ctx = Box::new(Plugin::new(Vec::new()));
+    let excludes = get_excludes(params_str.ok())
+        .unwrap_or_else(|| Vec::new());
+    let ctx = Box::new(Plugin::new(excludes));
     Box::into_raw(ctx)
 }
 
@@ -30,6 +33,12 @@ pub extern fn plugin_delete(ctx: * mut Plugin) {
     let _b = unsafe {
         Box::from_raw(ctx)
     };
+}
+
+fn get_excludes(params_str: Option<&str>) -> Option<Array> {
+    let params: Value = toml::from_str(params_str?).ok()?;
+    let excludes = params.get("exclude")?.as_array()?.clone();
+    Some(excludes)
 }
 
 pub struct Plugin {
@@ -43,10 +52,13 @@ impl Plugin {
         }
     }
     fn handle_line(&mut self, line: &str) -> u32 {
-        if line.contains("adler32 1.0.4") || line.contains("adler32 1.0.3") {
-            0
-        } else {
-            1
+        for exclude in self.excludes.iter() {
+            if let Some(exclude) = exclude.as_str() {
+                if line.contains(exclude) {
+                    return 0;
+                }
+            }
         }
+        1
     }
 }
