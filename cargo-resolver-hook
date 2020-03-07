@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+while IFS= read -r line
+do
+    if [[ "$line" == *"adler32 1.0.4"* ]]; then
+        echo "false"
+        continue
+    fi
+    #>&2 echo "$line"
+    echo "true"
+done
