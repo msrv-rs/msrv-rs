@@ -1,3 +1,5 @@
+use toml::value::Array;
+
 #[no_mangle]
 pub extern fn plugin_query(ctx: *mut Plugin, s: * const u8, len: usize) -> u32 {
     let mut ctx = unsafe {
@@ -21,7 +23,7 @@ pub extern fn plugin_init(s: * const u8, len: usize) -> * mut Plugin {
         let sl = std::slice::from_raw_parts(s, len);
         std::str::from_utf8(sl)
     };
-    let ctx = Box::new(Plugin::new());
+    let ctx = Box::new(Plugin::new(Vec::new()));
     Box::into_raw(ctx)
 }
 
@@ -34,11 +36,13 @@ pub extern fn plugin_delete(ctx: * mut Plugin) {
 }
 
 pub struct Plugin {
+    excludes: Array,
 }
 
 impl Plugin {
-    fn new() -> Self {
+    fn new(excludes: Array) -> Self {
         Self {
+            excludes,
         }
     }
     fn handle_line(&mut self, line: &str) -> u32 {
